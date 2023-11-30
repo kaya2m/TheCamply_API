@@ -152,6 +152,21 @@ namespace CamplyMarket.Persistence.Migrations
                     b.ToTable("OrderProduct");
                 });
 
+            modelBuilder.Entity("ProductProductImageFiles", b =>
+                {
+                    b.Property<Guid>("ProductImageFilesId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProductsId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("ProductImageFilesId", "ProductsId");
+
+                    b.HasIndex("ProductsId");
+
+                    b.ToTable("ProductProductImageFiles");
+                });
+
             modelBuilder.Entity("CamplyMarket.Domain.Entities.InvoiceFiles", b =>
                 {
                     b.HasBaseType("CamplyMarket.Domain.Entities.Files");
@@ -185,6 +200,21 @@ namespace CamplyMarket.Persistence.Migrations
                     b.HasOne("CamplyMarket.Domain.Entities.Order", null)
                         .WithMany()
                         .HasForeignKey("OrdersId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CamplyMarket.Domain.Entities.Product", null)
+                        .WithMany()
+                        .HasForeignKey("ProductsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ProductProductImageFiles", b =>
+                {
+                    b.HasOne("CamplyMarket.Domain.Entities.ProductImageFiles", null)
+                        .WithMany()
+                        .HasForeignKey("ProductImageFilesId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

@@ -8,6 +8,6 @@ namespace CamplyMarket.Domain.Entities
 {
     public class ProductImageFiles : Files
     {
-      
+        public ICollection<Product> Products { get; set; }
     }
 }
