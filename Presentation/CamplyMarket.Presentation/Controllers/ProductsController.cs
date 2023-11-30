@@ -1,8 +1,12 @@
-﻿using CamplyMarket.Application.Repositories.ProductInterface;
+﻿using CamplyMarket.Application.Abstraction.Storage;
+using CamplyMarket.Application.Repositories.FileInterface;
+using CamplyMarket.Application.Repositories.InvoiceFileInterface;
+using CamplyMarket.Application.Repositories.ProductImageFileInterface;
+using CamplyMarket.Application.Repositories.ProductInterface;
 using CamplyMarket.Application.RequestParameters;
-using CamplyMarket.Application.Services;
 using CamplyMarket.Application.ViewModels.Products;
 using CamplyMarket.Domain.Entities;
+using CamplyMarket.Infrastructure.Services.Storage;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
 
@@ -16,13 +20,30 @@ namespace CamplyMarket.Presentation.Controllers
         private readonly IProductWriteRepository _productWriteRepository;
         private readonly IProductReadRepository _productReadRepository;
         private readonly IWebHostEnvironment _webHost;
-        private readonly IFileService _fileService;
-        public ProductsController(IProductWriteRepository productWriteRepository, IProductReadRepository productReadRepository, IWebHostEnvironment webHost, IFileService fileService)
+        private readonly IFileWriteRepository _fileWriteRepository;
+        IFileReadRepository _fileReadRepository;
+        IProductImageFileReadRepository
+             _productImageFileRead;
+        IProductImageFileWriteRepository
+            _productImageFileWrite;
+        IInvoceFileReadRepository
+            _invoceFileRead;
+        IInvoceFileWriteRepository
+            _invoceFileWrite;
+        readonly IStorageService _storage;
+
+        public ProductsController(IProductWriteRepository productWriteRepository, IProductReadRepository productReadRepository, IWebHostEnvironment webHost, IFileWriteRepository fileWriteRepository, IFileReadRepository fileReadRepository, IProductImageFileReadRepository productImageFileRead, IProductImageFileWriteRepository productImageFileWrite, IInvoceFileReadRepository invoceFileRead, IInvoceFileWriteRepository invoceFileWrite, IStorageService storage)
         {
             _productWriteRepository = productWriteRepository;
             _productReadRepository = productReadRepository;
             _webHost = webHost;
-            this._fileService = fileService;
+            _fileWriteRepository = fileWriteRepository;
+            _fileReadRepository = fileReadRepository;
+            _productImageFileRead = productImageFileRead;
+            _productImageFileWrite = productImageFileWrite;
+            _invoceFileRead = invoceFileRead;
+            _invoceFileWrite = invoceFileWrite;
+            _storage = storage;
         }
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(string id)
@@ -93,8 +114,27 @@ namespace CamplyMarket.Presentation.Controllers
         [HttpPost("[action]")]
         public async Task<IActionResult> Upload()
         {
-          await _fileService.UploadAsync("resource/products-images", Request.Form.Files);
-            return Ok();
+            var datas = await _storage.UploadAsync("file", Request.Form.Files);
+          await  _productImageFileWrite.AddRangeAsync(datas.Select(d => new ProductImageFiles()
+          {
+              FileName = d.fileName,
+              Path = d.path,
+              Storage =_storage.StorageName
+
+          }).ToList());
+            await _productImageFileWrite.SaveAsync();
+
+            //    _fileWriteRepository.AddRangeAsync(datas.Select(d => new Files()
+            //    {
+            //        FileName = d.fileName,
+            //        Path = d.path
+
+            //    }).ToList());
+            //    await _fileWriteRepository.SaveAsync();
+            //    //var files =  _fileReadRepository.GetAll(false);
+            //    //var invoice = _invoceFileRead.GetAll(false);
+            //    //var productImage = _productImageFileRead.GetAll(false);
+                return Ok();
         }
 
     }

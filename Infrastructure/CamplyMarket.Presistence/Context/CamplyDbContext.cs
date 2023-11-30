@@ -16,6 +16,10 @@ namespace CamplyMarket.Persistence.Context
         public DbSet<Product> Products { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<Order> Orders { get; set;}
+        
+        public DbSet<Files> Files { get; set; }
+        public DbSet<ProductImageFiles> ProductImages { get; set; }
+        public DbSet<InvoiceFiles> Invoices { get; set; }
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             var datas = ChangeTracker.Entries<BaseEntity>();

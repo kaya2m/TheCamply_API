@@ -1,9 +1,15 @@
 ﻿using CamplyMarket.Application.Repositories.CustomerInterface;
+using CamplyMarket.Application.Repositories.FileInterface;
+using CamplyMarket.Application.Repositories.InvoiceFileInterface;
 using CamplyMarket.Application.Repositories.OrderInterface;
+using CamplyMarket.Application.Repositories.ProductImageFileInterface;
 using CamplyMarket.Application.Repositories.ProductInterface;
 using CamplyMarket.Persistence.Context;
 using CamplyMarket.Persistence.Repositories.CostumerRepositories;
+using CamplyMarket.Persistence.Repositories.FileRepositories;
+using CamplyMarket.Persistence.Repositories.InvoiceRepositories;
 using CamplyMarket.Persistence.Repositories.OrderRepositories;
+using CamplyMarket.Persistence.Repositories.ProductImageRepositories;
 using CamplyMarket.Persistence.Repositories.ProductRepositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -37,6 +43,13 @@ namespace CamplyMarket.Persistence
             services.AddScoped<IOrderWriteRepository, OrderWriteRepository>();
             services.AddScoped<IProductReadRepository, ProductReadRepository>();
             services.AddScoped<IProductWriteRepository, ProductWriteRepository>();
+
+            services.AddScoped<IFileReadRepository, FileReadRepository>();
+            services.AddScoped<IFileWriteRepository, FileWriteRespository>();
+            services.AddScoped<IInvoceFileReadRepository, InvoiceFileReadRepository>();
+            services.AddScoped<IInvoceFileWriteRepository, InvoiceWriteRepository>();
+            services.AddScoped<IProductImageFileReadRepository,ProductImagesReadRepsoitory>();
+            services.AddScoped<IProductImageFileWriteRepository, ProductImagesWriteRepsoitory>();
         }
     }
 }

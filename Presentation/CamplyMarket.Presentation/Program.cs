@@ -1,6 +1,8 @@
 using CamplyMarket.Application.Validators.Products;
 using CamplyMarket.Infrastructure;
 using CamplyMarket.Infrastructure.Filters;
+using CamplyMarket.Infrastructure.Services.Storage.Azure;
+using CamplyMarket.Infrastructure.Services.Storage.Local;
 using CamplyMarket.Persistence;
 using CamplyMarket.Persistence.Context;
 using FluentValidation.AspNetCore;
@@ -15,12 +17,14 @@ namespace CamplyMarket.Presentation
         {
             var builder = WebApplication.CreateBuilder(args);
             builder.Services.AddPersistenceService();
+            builder.Services.AddInfrastrustureServices();
+            builder.Services.AddStorage<AzureStorage>();
 
             builder.Services.AddControllers(options => options.Filters.Add<ValidationFilters>())
                 .AddFluentValidation(config => config.RegisterValidatorsFromAssemblyContaining<CreateProductValidatior>())
                 .ConfigureApiBehaviorOptions(options => options.SuppressModelStateInvalidFilter = true);
 
-            builder.Services.AddInfrastrustureServices();
+
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
