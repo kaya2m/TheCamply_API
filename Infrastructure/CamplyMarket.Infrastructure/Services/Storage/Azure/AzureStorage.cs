@@ -40,7 +40,7 @@ namespace CamplyMarket.Infrastructure.Services.Storage.Azure
             return _blobContainerClient.GetBlobs().Any(x => x.Name == fileName);
         }
 
-        public async Task<List<(string fileName, string path)>> UploadAsync(string containerName, IFormFileCollection files)
+        public async Task<List<(string fileName, string pathOrContainerName)>> UploadAsync(string containerName, IFormFileCollection files)
         {
             try
             {
@@ -50,14 +50,13 @@ namespace CamplyMarket.Infrastructure.Services.Storage.Azure
                 await _blobContainerClient.SetAccessPolicyAsync(PublicAccessType.BlobContainer);
 
                 List<(string fileName, string pathOrContainerName)> datas = new();
-                foreach (IFormFile file in files)   
+                foreach (IFormFile file in files)
                 {
                     string fileNewName = await FileRenameAsync(containerName, file.Name, HasFile);
 
                     BlobClient blobClient = _blobContainerClient.GetBlobClient(fileNewName);
                     await blobClient.UploadAsync(file.OpenReadStream());
-                    datas.Add((fileNewName, containerName));
-                    //(containerName, $"{containerName}/{containerName}")
+                    datas.Add((fileNewName, $"{containerName}/{fileNewName}"));
                 }
                 return datas;
             }

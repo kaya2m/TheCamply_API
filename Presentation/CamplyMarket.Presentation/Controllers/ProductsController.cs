@@ -112,28 +112,21 @@ namespace CamplyMarket.Presentation.Controllers
             });
         }
         [HttpPost("[action]")]
-        public async Task<IActionResult> Upload()
+        public async Task<IActionResult> Upload(string id)
         {
-            var datas = await _storage.UploadAsync("file", Request.Form.Files);
-          await  _productImageFileWrite.AddRangeAsync(datas.Select(d => new ProductImageFiles()
+            List<(string fileName, string pathOrContainerName)> result = await _storage.UploadAsync("product-images", Request.Form.Files);
+
+            Product product = await _productReadRepository.GetByIdAsync(id);
+
+          await  _productImageFileWrite.AddRangeAsync(result.Select(d => new ProductImageFiles()
           {
               FileName = d.fileName,
-              Path = d.path,
-              Storage =_storage.StorageName
+              Path = d.pathOrContainerName,
+              Storage =_storage.StorageName,
+              Products = new List<Product>() {product}
 
           }).ToList());
             await _productImageFileWrite.SaveAsync();
-
-            //    _fileWriteRepository.AddRangeAsync(datas.Select(d => new Files()
-            //    {
-            //        FileName = d.fileName,
-            //        Path = d.path
-
-            //    }).ToList());
-            //    await _fileWriteRepository.SaveAsync();
-            //    //var files =  _fileReadRepository.GetAll(false);
-            //    //var invoice = _invoceFileRead.GetAll(false);
-            //    //var productImage = _productImageFileRead.GetAll(false);
                 return Ok();
         }
 
