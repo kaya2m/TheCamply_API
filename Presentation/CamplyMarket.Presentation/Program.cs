@@ -1,3 +1,4 @@
+using CamplyMarket.Application;
 using CamplyMarket.Application.Validators.Products;
 using CamplyMarket.Infrastructure;
 using CamplyMarket.Infrastructure.Filters;
@@ -18,6 +19,7 @@ namespace CamplyMarket.Presentation
             var builder = WebApplication.CreateBuilder(args);
             builder.Services.AddPersistenceService();
             builder.Services.AddInfrastrustureServices();
+            builder.Services.AddApplicationServices();
             builder.Services.AddStorage<AzureStorage>();
 
             builder.Services.AddControllers(options => options.Filters.Add<ValidationFilters>())

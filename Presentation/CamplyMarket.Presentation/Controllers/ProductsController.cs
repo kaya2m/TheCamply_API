@@ -1,4 +1,10 @@
 ﻿using CamplyMarket.Application.Abstraction.Storage;
+using CamplyMarket.Application.Features.Commands.Product.CreateProduct;
+using CamplyMarket.Application.Features.Commands.Product.DeleteProduct;
+using CamplyMarket.Application.Features.Commands.Product.UpdateProduct;
+using CamplyMarket.Application.Features.Commands.ProductImageFile.UploadProductImage;
+using CamplyMarket.Application.Features.Queries.Product.GetAllProduct;
+using CamplyMarket.Application.Features.Queries.Product.GetByIdProduct;
 using CamplyMarket.Application.Repositories.FileInterface;
 using CamplyMarket.Application.Repositories.InvoiceFileInterface;
 using CamplyMarket.Application.Repositories.ProductImageFileInterface;
@@ -7,7 +13,9 @@ using CamplyMarket.Application.RequestParameters;
 using CamplyMarket.Application.ViewModels.Products;
 using CamplyMarket.Domain.Entities;
 using CamplyMarket.Infrastructure.Services.Storage;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Net;
 
 namespace CamplyMarket.Presentation.Controllers
@@ -31,8 +39,11 @@ namespace CamplyMarket.Presentation.Controllers
         IInvoceFileWriteRepository
             _invoceFileWrite;
         readonly IStorageService _storage;
+        readonly IConfiguration configuration;
 
-        public ProductsController(IProductWriteRepository productWriteRepository, IProductReadRepository productReadRepository, IWebHostEnvironment webHost, IFileWriteRepository fileWriteRepository, IFileReadRepository fileReadRepository, IProductImageFileReadRepository productImageFileRead, IProductImageFileWriteRepository productImageFileWrite, IInvoceFileReadRepository invoceFileRead, IInvoceFileWriteRepository invoceFileWrite, IStorageService storage)
+        readonly IMediator _mediator;
+
+        public ProductsController(IProductWriteRepository productWriteRepository, IProductReadRepository productReadRepository, IWebHostEnvironment webHost, IFileWriteRepository fileWriteRepository, IFileReadRepository fileReadRepository, IProductImageFileReadRepository productImageFileRead, IProductImageFileWriteRepository productImageFileWrite, IInvoceFileReadRepository invoceFileRead, IInvoceFileWriteRepository invoceFileWrite, IStorageService storage, IConfiguration configuration, IMediator mediator)
         {
             _productWriteRepository = productWriteRepository;
             _productReadRepository = productReadRepository;
@@ -44,91 +55,75 @@ namespace CamplyMarket.Presentation.Controllers
             _invoceFileRead = invoceFileRead;
             _invoceFileWrite = invoceFileWrite;
             _storage = storage;
+            this.configuration = configuration;
+            _mediator = mediator;
         }
         [HttpGet("{id}")]
-        public async Task<IActionResult> Get(string id)
+        public async Task<IActionResult> Get([FromRoute] GetByIdProductQueryRequest getByIdProductQueryRequest)
         {
-            var product = await _productReadRepository.GetByIdAsync(id, false);
-            return Ok(product);
+            GetByIdProductQueryResponse response = await _mediator.Send(getByIdProductQueryRequest);
+            return Ok(response);
         }
 
         [HttpGet]
-        public async Task<IActionResult> Get([FromQuery] Pagination pagination)
+        public async Task<IActionResult> Get([FromQuery] GetAllProductQueryRequest getAllProductQueryRequest)
         {
-            var totalCount = _productReadRepository.GetAll(false)
-                .Count();
-
-            var products = _productReadRepository.GetAll(false)
-                .Select(p => new
-                {
-                    p.Id,
-                    p.Name,
-                    p.Price,
-                    p.Stock,
-                    p.CreateDate,
-                    p.UpdatedDate
-                }).Skip(pagination.Page * pagination.Size)
-                  .Take(pagination.Size);
-            return Ok(new { products, totalCount });
+            GetAllProductQueryResponse response = await _mediator.Send(getAllProductQueryRequest);
+            return Ok(response);
         }
         [HttpPost]
-        public async Task<IActionResult> Post(VM_Create_Product product)
+        public async Task<IActionResult> Post(CreateProductCommandRequest createProductCommandRequest)
         {
-            if (ModelState.IsValid)
-            {
-                await _productWriteRepository.AddAsync(
-                 new Product
-                 {
-                     Name = product.Name,
-                     Price = product.Price,
-                     Stock = product.Stock
-                 });
-            }
-
-            await _productWriteRepository.SaveAsync();
-            return Ok((int)HttpStatusCode.Created);
+            CreateProductCommandResponse response = await _mediator.Send(createProductCommandRequest);
+            return StatusCode((int)HttpStatusCode.Created);
         }
 
         [HttpPut]
-        public async Task<IActionResult> Put(VM_Update_Product model)
+        public async Task<IActionResult> Put([FromBody]UpdateProductCommandRequest request)
         {
-            Product product = await _productReadRepository.GetByIdAsync(model.Id);
-            product.Stock = model.Stock;
-            product.Price = model.Price;
-            product.Name = model.Name;
-            await _productWriteRepository.SaveAsync();
-            return Ok();
+            await _mediator.Send(request);
+            return StatusCode((int)HttpStatusCode.OK);
         }
 
-        [HttpDelete]
-        [Route("{id}")]
-        public async Task<IActionResult> Delete(string id)
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete([FromRoute]DeleteProductCommandRequest request)
         {
-            await _productWriteRepository.Remove(id);
-            await _productWriteRepository.SaveAsync();
+            await _mediator.Send(request);
             return Ok(new
             {
                 message = "silme işlemi başarılı"
             });
         }
         [HttpPost("[action]")]
-        public async Task<IActionResult> Upload(string id)
+        public async Task<IActionResult> Upload([FromQuery]UploadProductImageCommandRequest request)
         {
-            List<(string fileName, string pathOrContainerName)> result = await _storage.UploadAsync("product-images", Request.Form.Files);
-
-            Product product = await _productReadRepository.GetByIdAsync(id);
-
-          await  _productImageFileWrite.AddRangeAsync(result.Select(d => new ProductImageFiles()
-          {
-              FileName = d.fileName,
-              Path = d.pathOrContainerName,
-              Storage =_storage.StorageName,
-              Products = new List<Product>() {product}
-
-          }).ToList());
-            await _productImageFileWrite.SaveAsync();
-                return Ok();
+            request.Files = Request.Form.Files;
+           UploadProductImageCommandResponse response= await _mediator.Send(request);
+            return Ok();
         }
 
+        [HttpGet("[action]/{id}")]
+        public async Task<IActionResult> GetProductImages(string id)
+        {
+            Product? product = await _productReadRepository.Table.Include(p => p.ProductImageFiles)
+                    .FirstOrDefaultAsync(p => p.Id == Guid.Parse(id));
+            return Ok(product.ProductImageFiles.Select(p => new
+            {
+                Path = $"{configuration["BaseStorageUrl"]}/{p.Path}",
+                p.FileName,
+                p.Id
+            }));
+        }
+        [HttpDelete("[action]/{id}")]
+        public async Task<IActionResult> DeleteProductImage(string id, string imageId)
+        {
+            Product? product = await _productReadRepository.Table.Include(p => p.ProductImageFiles)
+                  .FirstOrDefaultAsync(p => p.Id == Guid.Parse(id));
+
+            ProductImageFiles productImageFile = product.ProductImageFiles.FirstOrDefault(p => p.Id == Guid.Parse(imageId));
+            product.ProductImageFiles.Remove(productImageFile);
+            await _productWriteRepository.SaveAsync();
+            return Ok();
+        }
     }
 }
