@@ -6,12 +6,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CamplyMarket.Application.Features.Commands.ProductImageFile.UploadProductImage
+namespace CamplyMarket.Application.Features.Commands.ProductImageFile.UploadProductImage;
+
+public class UploadProductImageCommandRequest : IRequest<UploadProductImageCommandResponse>
 {
-    public class UploadProductImageCommandRequest 
-        : IRequest<UploadProductImageCommandResponse>
-    {
-        public string id { get; set; }
-        public IFormFileCollection Files { get; set; }
-    }
+    public string Id { get; set; }
+    public IFormFileCollection? Files { get; set; }
 }

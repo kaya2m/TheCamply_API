@@ -8,5 +8,8 @@ namespace CamplyMarket.Application.Features.Queries.ProductImageFile.GetProductI
 {
     public class GetProductImageFileQueryResponse
     {
+        public string Path { get; set; }
+        public Guid id { get; set; }
+        public string FileName { get; set; }
     }
 }

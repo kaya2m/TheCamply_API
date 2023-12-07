@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CamplyMarket.Application.Features.Commands.ProductImageFile.RemoveProductImage
 {
-    internal class RemoveProductImageCommandResponse
+    public class RemoveProductImageCommandResponse
     {
     }
 }
