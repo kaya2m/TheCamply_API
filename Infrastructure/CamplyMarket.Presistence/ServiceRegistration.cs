@@ -4,6 +4,7 @@ using CamplyMarket.Application.Repositories.InvoiceFileInterface;
 using CamplyMarket.Application.Repositories.OrderInterface;
 using CamplyMarket.Application.Repositories.ProductImageFileInterface;
 using CamplyMarket.Application.Repositories.ProductInterface;
+using CamplyMarket.Domain.Entities.Identity;
 using CamplyMarket.Persistence.Context;
 using CamplyMarket.Persistence.Repositories.CostumerRepositories;
 using CamplyMarket.Persistence.Repositories.FileRepositories;
@@ -14,13 +15,7 @@ using CamplyMarket.Persistence.Repositories.ProductRepositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.FileSystemGlobbing.Abstractions;
-using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Identity;
 
 namespace CamplyMarket.Persistence
 {
@@ -33,6 +28,7 @@ namespace CamplyMarket.Persistence
             configuration.SetBasePath(Path.Combine(Directory.GetCurrentDirectory(), "../../Presentation/CamplyMarket.Presentation"));
             configuration.AddJsonFile("appsettings.json");
 
+            services.AddIdentity<AppUser,AppRole>().AddEntityFrameworkStores<CamplyDbContext>();
 
             services.AddDbContext<CamplyDbContext>(options =>
                  options.UseNpgsql(configuration.GetConnectionString("PostgreSQL")));

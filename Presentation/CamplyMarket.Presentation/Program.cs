@@ -26,7 +26,6 @@ namespace CamplyMarket.Presentation
                 .AddFluentValidation(config => config.RegisterValidatorsFromAssemblyContaining<CreateProductValidatior>())
                 .ConfigureApiBehaviorOptions(options => options.SuppressModelStateInvalidFilter = true);
 
-
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 

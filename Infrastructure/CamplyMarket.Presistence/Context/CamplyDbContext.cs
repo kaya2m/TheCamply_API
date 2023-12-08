@@ -1,15 +1,13 @@
 ﻿using CamplyMarket.Domain.Entities;
 using CamplyMarket.Domain.Entities.Common;
+using CamplyMarket.Domain.Entities.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace CamplyMarket.Persistence.Context
 {
-    public class CamplyDbContext : DbContext
+    public class CamplyDbContext : IdentityDbContext<AppUser,AppRole,string>
     {
         public CamplyDbContext(DbContextOptions options) : base(options)
         {}
