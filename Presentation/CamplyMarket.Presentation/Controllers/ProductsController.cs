@@ -8,6 +8,7 @@ using CamplyMarket.Application.Features.Queries.Product.GetAllProduct;
 using CamplyMarket.Application.Features.Queries.Product.GetByIdProduct;
 using CamplyMarket.Application.Features.Queries.ProductImageFile.GetProductImageFile;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
 
@@ -15,6 +16,7 @@ namespace CamplyMarket.Presentation.Controllers
 {
     [Route("api/products")]
     [ApiController]
+    [Authorize(AuthenticationSchemes ="Admin")]
     public class ProductsController : ControllerBase
     {
         readonly IMediator _mediator;

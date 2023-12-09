@@ -1,4 +1,6 @@
-﻿using MediatR;
+﻿using CamplyMarket.Application.Abstraction.Token;
+using CamplyMarket.Application.DTOs;
+using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;

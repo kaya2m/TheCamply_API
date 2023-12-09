@@ -7,8 +7,11 @@ using CamplyMarket.Infrastructure.Services.Storage.Local;
 using CamplyMarket.Persistence;
 using CamplyMarket.Persistence.Context;
 using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace CamplyMarket.Presentation
 {
@@ -28,7 +31,18 @@ namespace CamplyMarket.Presentation
 
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+            builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer("Admin", options => options.TokenValidationParameters = new()
+                {
+                    ValidateAudience = true, // token deðerini kimlerin kullanacaðýýn belirtir
+                    ValidateIssuer = true, // tokeni kim,n ouþturacaðýný brlirtir
+                    ValidateLifetime = true, // tokenin geçerlilik süresini belirtir
+                    ValidateIssuerSigningKey = true,// tokenin hangi anahtar ile þifrelendiðini belirtir
 
+                    ValidAudience = builder.Configuration["Token:Audience"],
+                    ValidIssuer = builder.Configuration["Token:Issuer"],
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Token:SecurityKey"]))
+                }); ;
             builder.Services.AddCors(opt => opt.AddDefaultPolicy(poilcy => poilcy
             .WithOrigins("http://localhost:4200", "https://localhost:4200")
             .AllowAnyHeader()
@@ -45,6 +59,7 @@ namespace CamplyMarket.Presentation
 
             app.UseHttpsRedirection();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseCors();
