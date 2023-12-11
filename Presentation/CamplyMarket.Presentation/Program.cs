@@ -24,6 +24,7 @@ namespace CamplyMarket.Presentation
             builder.Services.AddInfrastrustureServices();
             builder.Services.AddApplicationServices();
             builder.Services.AddStorage<AzureStorage>();
+            builder.Services.AddHttpClient();
 
             builder.Services.AddControllers(options => options.Filters.Add<ValidationFilters>())
                 .AddFluentValidation(config => config.RegisterValidatorsFromAssemblyContaining<CreateProductValidatior>())
