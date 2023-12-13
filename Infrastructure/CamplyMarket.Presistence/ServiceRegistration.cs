@@ -16,6 +16,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Identity;
+using CamplyMarket.Application.Abstraction.Services;
+using CamplyMarket.Persistence.Services;
+using CamplyMarket.Application.Abstraction.Services.Authentication;
 
 namespace CamplyMarket.Persistence
 {
@@ -46,6 +49,11 @@ namespace CamplyMarket.Persistence
             services.AddScoped<IInvoceFileWriteRepository, InvoiceWriteRepository>();
             services.AddScoped<IProductImageFileReadRepository,ProductImagesReadRepsoitory>();
             services.AddScoped<IProductImageFileWriteRepository, ProductImagesWriteRepsoitory>();
+
+            services.AddScoped<IUser, UserService>();
+            services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IExternalAuthentication, AuthService>();
+            services.AddScoped<IInternalAuthentication, AuthService>();
         }
     }
 }

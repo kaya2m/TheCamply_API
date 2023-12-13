@@ -1,5 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
+using CamplyMarket.Application.Abstraction.Services;
+using CamplyMarket.Application.DTOs.User;
 using CamplyMarket.Application.Features.Commands.AppUser.CreateUser;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
@@ -8,33 +10,30 @@ namespace CamplyMarket.Application.Features.Commands.AppUser.CreateUser
 {
      public class CreateUserCommandHandler : IRequestHandler<CreateUserCommandRequest, CreateUserCommandResponse>
     {
-        readonly UserManager<Domain.Entities.Identity.AppUser> _userManager;
-        public CreateUserCommandHandler(UserManager<Domain.Entities.Identity.AppUser> userManager)
+        readonly IUser _user;
+
+        public CreateUserCommandHandler(IUser user)
         {
-            _userManager = userManager;
+            _user = user;
         }
 
         public async Task<CreateUserCommandResponse> Handle(CreateUserCommandRequest request, CancellationToken cancellationToken)
         {
-            IdentityResult result = await _userManager.CreateAsync(new()
+         CreateUserResponse response =   await _user.CreateAsync(new()
             {
-                Id = Guid.NewGuid().ToString(),
-                UserName = request.UserName,
                 Email = request.Email,
                 FirstName = request.FirstName,
-                LastName = request.LastName
-            }, request.Password);
+                LastName = request.LastName,
+                Password = request.Password,
+                UserName = request.UserName,
+                PasswordConfirm = request.PasswordConfirm
+            });
 
-            CreateUserCommandResponse response = new() { Succeeded = result.Succeeded };
-
-            if (result.Succeeded)
-                response.Message = "Kullanıcı başarıyla oluşturulmuştur.";
-            else
-                foreach (var error in result.Errors)
-                    response.Message += $"{error.Code} - {error.Description}\n";
-
-            return response;
-
+            return new CreateUserCommandResponse
+            {
+                Message = response.Message,
+                Succeeded = response.Succeeded
+            };
             //throw new UserCreateFailedException();
         }
     }
