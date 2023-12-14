@@ -9,46 +9,27 @@ using System.Threading.Tasks;
 using CamplyMarket.Application.Exceptions;
 using CamplyMarket.Application.Abstraction.Token;
 using CamplyMarket.Application.DTOs;
+using CamplyMarket.Application.Abstraction.Services;
 
 namespace CamplyMarket.Application.Features.Commands.AppUser.LoginUser
 {
     public class LoginUserCommandHandler : IRequestHandler<LoginUserCommandRequest, LoginUserCommandResponse>
     {
-        readonly UserManager<entity.AppUser> _userManager;
-        readonly SignInManager<entity.AppUser> _signInManager;
-        readonly ITokenHandler _tokenHandler;
+        IAuthService _authService;
 
-
-        public LoginUserCommandHandler(UserManager<entity.AppUser> userManager, SignInManager<entity.AppUser> signInManager, ITokenHandler tokenHandler)
+        public LoginUserCommandHandler(IAuthService authService)
         {
-            _userManager = userManager;
-            _signInManager = signInManager;
-            _tokenHandler = tokenHandler;
+            _authService = authService;
         }
 
         public async Task<LoginUserCommandResponse> Handle(LoginUserCommandRequest request, CancellationToken cancellationToken)
         {
-            entity.AppUser user = await _userManager.FindByNameAsync(request.UsernameOrEmail);
-            if (user == null)
-                user = await _userManager.FindByEmailAsync(request.UsernameOrEmail);
-
-            if (user == null)
-                throw new NotFoundUserException("Kullanıcı adı veya şifre hatalı...");
-
-            SignInResult result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, false);
-            if (result.Succeeded)  // buraya kadar gelindiğinde kullanıcı doğrulanmıştır.
+         
+           Token token = await _authService.LoginAsync(request.UsernameOrEmail, request.Password);
+            return new LoginUserSuccessResponse()
             {
-                Token token = _tokenHandler.CreateAccessToken(12000);
-                return new LoginUserSuccessResponse()
-                {
-                    Token = token
-                };
-            }
-            return new LoginUserFailResponse()
-            {
-                Message = "Kullanıcı adı veya şifre hatalı..."
+                Token = token
             };
-
         }
     }
 }

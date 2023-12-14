@@ -8,6 +8,7 @@ namespace CamplyMarket.Application.Abstraction.Services.Authentication
 {
     public interface IInternalAuthentication
     {
-        Task LoginAsync();
+        Task<DTOs.Token> LoginAsync(string userNameOremail, string password);
+
     }
 }

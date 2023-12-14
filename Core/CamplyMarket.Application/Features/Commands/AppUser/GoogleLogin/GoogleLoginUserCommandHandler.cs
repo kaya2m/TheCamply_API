@@ -1,5 +1,7 @@
-﻿using CamplyMarket.Application.Abstraction.Token;
+﻿using CamplyMarket.Application.Abstraction.Services;
+using CamplyMarket.Application.Abstraction.Token;
 using CamplyMarket.Application.DTOs;
+using CamplyMarket.Application.DTOs.Google;
 using CamplyMarket.Application.Exceptions;
 using Google.Apis.Auth;
 using MediatR;
@@ -11,59 +13,33 @@ namespace CamplyMarket.Application.Features.Commands.AppUser.GoogleLogin
 {
     public class GoogleLoginUserCommandHandler : IRequestHandler<GoogleLoginUserCommandRequest, GoogleLoginUserCommandResponse>
     {
-        readonly IConfiguration _configuration;
-        readonly UserManager<appUser> _userManager;
-        readonly ITokenHandler _tokenHandler;
+        IAuthService _authService;
 
-        public GoogleLoginUserCommandHandler(IConfiguration configuration, UserManager<appUser> userManager, ITokenHandler tokenHandler)
+        public GoogleLoginUserCommandHandler(IAuthService authService)
         {
-            _configuration = configuration;
-            _userManager = userManager;
-            _tokenHandler = tokenHandler;
+            _authService = authService;
         }
 
         public async Task<GoogleLoginUserCommandResponse> Handle(GoogleLoginUserCommandRequest request, CancellationToken cancellationToken)
         {
-            var settings = new GoogleJsonWebSignature.ValidationSettings()
-            {
-                Audience = new List<string>() { _configuration["Google:ClientId"] }
+           DTOs.Google.GoogleLogin query = new DTOs.Google.GoogleLogin()
+           {
+                Id = request.Id,
+                IdToken = request.IdToken,
+                Email = request.Email,
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                Name = request.Name,
+                PhotoUrl = request.PhotoUrl,
+                Provider = request.Provider
             };
-            var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, settings);
-          var info = new UserLoginInfo(request.Provider, payload.Subject, request.Provider);
-            appUser user = await _userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
-
-            bool result = user != null;
-            if (user == null)
-            {
-                user = await _userManager.FindByEmailAsync(payload.Email);
-                if (user == null)
-                {
-                    user = new()
-                    {
-                        Id = Guid.NewGuid().ToString(),
-                        Email = payload.Email,
-                        UserName = payload.Email,
-                        FirstName = payload.Name,
-                        
-                    };
-                    var identityResult = await _userManager.CreateAsync(user);
-                    result = identityResult.Succeeded;
-                }
-            }
-
-            if (result)
-                await _userManager.AddLoginAsync(user, info); //AspNetUserLogins
-            else
-                throw new Exception("Invalid external authentication.");
-
-            Token token = _tokenHandler.CreateAccessToken(5000);
-
+            GoogleLoginResponse token = await _authService.GoogleLoginAsync(query);
             return new()
             {
-                Token = token
-            };
+                Token = token.Token
+            };  
 
         }
-        }
     }
+}
 

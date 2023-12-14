@@ -3,8 +3,11 @@ using CamplyMarket.Application.Abstraction.Token;
 using CamplyMarket.Application.DTOs;
 using CamplyMarket.Application.DTOs.Facebook;
 using CamplyMarket.Application.DTOs.Google;
+using CamplyMarket.Application.Exceptions;
+using CamplyMarket.Application.Features.Commands.AppUser.LoginUser;
 using CamplyMarket.Domain.Entities;
 using CamplyMarket.Domain.Entities.Identity;
+using Google.Apis.Auth;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
@@ -22,13 +25,45 @@ namespace CamplyMarket.Persistence.Services
         readonly HttpClient _httpClient;
         readonly IConfiguration configuration;
         readonly UserManager<AppUser> _userManager;
+        readonly SignInManager<AppUser> _signInManager;
         readonly ITokenHandler _tokenHandler;
-        public AuthService(IHttpClientFactory httpClientFactory, UserManager<AppUser> userManager, ITokenHandler tokenHandler, IConfiguration configuration)
+        public AuthService(IHttpClientFactory httpClientFactory, UserManager<AppUser> userManager, ITokenHandler tokenHandler, IConfiguration configuration, SignInManager<AppUser> signInManager)
         {
             _httpClient = httpClientFactory.CreateClient();
             _userManager = userManager;
             _tokenHandler = tokenHandler;
             this.configuration = configuration;
+            _signInManager = signInManager;
+        }
+
+        private async Task<Token> CreateUserExternalAsync(AppUser user, string email, string firstName, UserLoginInfo info)
+        {
+            bool result = user != null;
+            if (user == null)
+            {
+                user = await _userManager.FindByEmailAsync(email);
+                if (user == null)
+                {
+                    user = new()
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        Email = email,
+                        UserName = email,
+                        FirstName = firstName
+                    };
+                    var identityResult = await _userManager.CreateAsync(user);
+                    result = identityResult.Succeeded;
+                }
+            }
+
+            if (result)
+            {
+                await _userManager.AddLoginAsync(user, info); //AspNetUserLogins
+
+                Token token = _tokenHandler.CreateAccessToken(5000);
+                return token;
+            }
+            throw new Exception("Invalid external authentication.");
         }
         public async Task<FacebookLoginResponse> FacebookLoginAsync(FacebookLogin model)
         {
@@ -47,48 +82,45 @@ namespace CamplyMarket.Persistence.Services
 
                 var info = new UserLoginInfo("FACEBOOK", validation.Data.UserId, "FACEBOOK");
                 AppUser user = await _userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
-
-                bool result = user != null;
-                if (user == null)
+                Token token = await CreateUserExternalAsync(user, userInfo.Email, userInfo.Name, info);
+                return new()
                 {
-                    user = await _userManager.FindByEmailAsync(userInfo?.Email);
-                    if (user == null)
-                    {
-                        user = new()
-                        {
-                            Id = Guid.NewGuid().ToString(),
-                            Email = userInfo?.Email,
-                            UserName = userInfo?.Email,
-                            FirstName = userInfo?.Name
-                        };
-                        var identityResult = await _userManager.CreateAsync(user);
-                        result = identityResult.Succeeded;
-                    }
-                }
-
-                if (result)
-                {
-                    await _userManager.AddLoginAsync(user, info); //AspNetUserLogins
-
-                    Token token = _tokenHandler.CreateAccessToken(5);
-                    return new()
-                    {
-                        Token = token
-                    };
-                }
+                    Token = token
+                };
             }
             throw new Exception("Invalid external authentication.");
-
         }
-
-        public Task<GoogleLoginResponse> GoogleLoginAsync(GoogleLogin model)
+        public async Task<GoogleLoginResponse> GoogleLoginAsync(GoogleLogin model)
         {
-            throw new NotImplementedException();
+            var settings = new GoogleJsonWebSignature.ValidationSettings()
+            {
+                Audience = new List<string>() { configuration["ExternalLoginSettings:Google:ClientId"] }
+            };
+            var payload = await GoogleJsonWebSignature.ValidateAsync(model.IdToken, settings);
+            var info = new UserLoginInfo(model.Provider, payload.Subject, model.Provider);
+            AppUser user = await _userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
+            Token token = await CreateUserExternalAsync(user, payload.Email, payload.Name, info);
+            return new()
+            {
+                Token = token
+            };
         }
-
-        public Task LoginAsync()
+        public async Task<Token> LoginAsync(string userNameOremail, string password)
         {
-            throw new NotImplementedException();
+            AppUser user = await _userManager.FindByNameAsync(userNameOremail);
+            if (user == null)
+                user = await _userManager.FindByEmailAsync(userNameOremail);
+
+            if (user == null)
+                throw new NotFoundUserException();
+
+            SignInResult result = await _signInManager.CheckPasswordSignInAsync(user, password, false);
+            if (result.Succeeded) //Authentication başarılı!
+            {
+                Token token = _tokenHandler.CreateAccessToken(15000);
+                return token;
+            }
+            throw new AuthenticationErrorExcepiton("Kullanıcı bulunamadı");
         }
     }
 }
